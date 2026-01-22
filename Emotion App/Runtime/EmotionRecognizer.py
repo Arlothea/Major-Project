@@ -23,5 +23,3 @@ class EmotionRecognizerModel:
         preds = self.model.predict(self.preprocess(face), verbose=0)
         idx = np.argmax(preds)
         return self.emotions[idx], float(preds[0][idx])
-
-    # Example usage:bxdsqlcubdeqi
