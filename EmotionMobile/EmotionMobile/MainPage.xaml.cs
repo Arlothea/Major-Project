@@ -1,56 +1,28 @@
-﻿using EmotionMobile.Services;
+﻿using Plugin.LocalNotification;
 
 namespace EmotionMobile;
 
 public partial class MainPage : ContentPage
 {
-    ICameraService cameraService;
-    bool _cameraStarted;
-
     public MainPage()
     {
         InitializeComponent();
-
-        cameraService = DependencyService.Get<ICameraService>();
-
-        if (cameraService != null)
-        {
-            cameraService.FrameReady += OnFrameReady;
-        }
     }
-    protected override void OnAppearing()
+
+    private async void OnSendAlert(object sender, EventArgs e)
     {
-        base.OnAppearing();
-
-#if ANDROID
-        if (_cameraStarted)
-            return;
-
-        if (cameraService == null)
-            return;
-
-        if (AndroidX.Core.Content.ContextCompat.CheckSelfPermission(
-                Android.App.Application.Context,
-                Android.Manifest.Permission.Camera)
-            == Android.Content.PM.Permission.Granted)
+        var request = new NotificationRequest
         {
-            _cameraStarted = true;
-            cameraService.StartCamera();
-        }
-#endif
-    }
-    protected override void OnDisappearing()
-    {
-        if (_cameraStarted && cameraService != null)
-        {
-            cameraService.StopCamera();
-            _cameraStarted = false;
-        }
+            NotificationId = 100,
+            Title = "Emotion Alert",
+            Description = "Bubbling detected – intervention recommended.",
+            Schedule = new NotificationRequestSchedule
+            {
+                NotifyTime = DateTime.Now.AddSeconds(1)
+            }
+        };
 
-        base.OnDisappearing();
-    }
-    void OnFrameReady(byte[] frame, int width, int height)
-    {
+        await LocalNotificationCenter.Current.Show(request);
     }
 }
 

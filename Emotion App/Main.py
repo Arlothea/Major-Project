@@ -1,6 +1,4 @@
-from encodings.punycode import T
 import os
-from tkinter import W
 # Suppress TensorFlow logging and disable GPU usage
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -22,15 +20,16 @@ recognizer = None
 cap = None
 
 # GLOBALS
+angry_frame_count = 0   
+
 FACE_PERSISTENCE = 1.5
 SMOOTHING = 0.8
 
-emotion_history = []
-EMOTION_WINDOW = 15
+last_state = "calm"
+transition_detected = False
 
-anger_scores = []
-ANGER_WINDOW = 30
-ESCALATION = False
+emotion_history = []
+EMOTION_WINDOW = 5
 
 last_faces = []
 last_face_time = 0.0
@@ -102,6 +101,7 @@ def get_frame():
     # It then predicts the emotion for each face and shows the result on the frame.
     global cap, face_cascade, recognizer
     global last_faces, last_face_time
+    global last_state, transition_detected
 
     try:
     # Ensure the camera is initialized
@@ -126,9 +126,6 @@ def get_frame():
 
         # Convert the frame to grayscale for face detection
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # Enhance contrast using histogram equalization
-        gray = cv2.equalizeHist(gray)
     
         # Resize the grayscale image for faster face detection
         scale = 0.75
@@ -185,13 +182,7 @@ def get_frame():
             if last_faces and (now - last_face_time < FACE_PERSISTENCE):
                 faces = last_faces
             else:
-                faces = []
-
-        if not faces and (now - last_face_time >= FACE_PERSISTENCE):
-            emotion_history.clear()
-            anger_scores.clear()
-            last_faces.clear()
-     
+                faces = []    
 
         # For each detected face, predict the emotion and annotate the frame
         for (x, y, w, h) in faces:
@@ -212,38 +203,44 @@ def get_frame():
                 if pred is None or len(pred) < 2:
                     continue
 
-                emotion, confidence = pred
+                raw_emotion, confidence = pred
                 confidence = float(confidence)
 
-                print("RAW:", emotion)
+                print("RAW:", raw_emotion)
 
-                emotion_history.append(emotion)
+                emotion_history.append(raw_emotion)
                 if len(emotion_history) > EMOTION_WINDOW:
                     emotion_history.pop(0)
 
-                emotion = max(set(emotion_history), key=emotion_history.count)
+                display_emotion = max(set(emotion_history), key=emotion_history.count)
 
-                if emotion.lower() == "angry":
-                    anger_scores.append(confidence)
+                global angry_frame_count
+
+                if raw_emotion.lower() == "angry":
+                    angry_frame_count += 1
                 else:
-                    anger_scores.append(0.0)
+                    angry_frame_count = 0
 
-                if len(anger_scores) > ANGER_WINDOW:
-                    anger_scores.pop(0)
+                current_state = "angry" if angry_frame_count >= 5 else "calm"
 
-                ESCALATION = False
-                if len(anger_scores) == ANGER_WINDOW:
-                    first_half = np.mean(anger_scores[:ANGER_WINDOW//2])
-                    second_half = np.mean(anger_scores[ANGER_WINDOW//2:])
+                transition_detected = False
+                if last_state == "calm" and current_state == "angry":
+                    transition_detected = True
 
-                    if second_half > first_half and second_half > 0.4:
-                        ESCALATION = True
+                last_state = current_state
 
-                results.append((emotion, confidence))     
+                results.append((display_emotion, confidence))
 
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
     
-                cv2.putText(frame, f"{emotion}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                cv2.putText(frame, display_emotion, (x, y - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
+
+                if transition_detected:
+                    cv2.putText(frame, "ESCALATION DETECTED",
+                    (x, y - 35),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                    (0,0,255), 2)
             
             except Exception:
                 continue
