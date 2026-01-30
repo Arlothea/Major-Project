@@ -23,6 +23,7 @@
   <ItemGroup>
     <Compile Include="Runtime\EmotionRecognizer.py" />
     <Compile Include="Runtime\__init__.py" />
+    <Compile Include="server.py" />
     <Compile Include="Training\Dataset_Loader.py" />
     <Compile Include="Training\Emotion_Model.py" />
     <Compile Include="Main.py" />

@@ -8,6 +8,7 @@ import time
 import sys
 import cv2
 import numpy as np
+import requests
 
 # Import the EmotionRecognizerModel from the Runtime module
 from Runtime.EmotionRecognizer import EmotionRecognizerModel
@@ -20,6 +21,10 @@ recognizer = None
 cap = None
 
 # GLOBALS
+alert_active = False
+alert_start_time = 0
+ALERT_DURATION = 2
+
 angry_frame_count = 0   
 
 FACE_PERSISTENCE = 1.5
@@ -33,6 +38,18 @@ EMOTION_WINDOW = 5
 
 last_faces = []
 last_face_time = 0.0
+
+API_SERVER = "http://192.168.0.125:8000"
+
+def send_escalation(name="Unknown", level=4, camera="Room1"):
+    try:
+        requests.post(
+            f"{API_SERVER}/escalation",
+            json={"name": name, "level": level, "camera": camera},
+            timeout=0.3
+        )
+    except:
+        pass
 
 # Ensure the emotion recognizer model is loaded
 def _ensure_recognizer(model_path = None):
@@ -102,6 +119,7 @@ def get_frame():
     global cap, face_cascade, recognizer
     global last_faces, last_face_time
     global last_state, transition_detected
+    global alert_active, alert_start_time
 
     try:
     # Ensure the camera is initialized
@@ -236,11 +254,22 @@ def get_frame():
                 cv2.putText(frame, display_emotion, (x, y - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
 
-                if transition_detected:
-                    cv2.putText(frame, "ESCALATION DETECTED",
-                    (x, y - 35),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                    (0,0,255), 2)
+                current_time = time.time()
+
+                if transition_detected and not alert_active:
+                    alert_active = True
+                    alert_start_time = current_time
+                    send_escalation(name="Unknown", level=4, camera="Room1")
+
+                if alert_active:
+                    if current_time - alert_start_time < ALERT_DURATION:
+                        cv2.putText(frame, "ESCALATION DETECTED",
+                        (x, y - 35),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                        (0,0,255), 2)
+                    else:
+                        alert_active = False
+
             
             except Exception:
                 continue

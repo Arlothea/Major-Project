@@ -6,15 +6,27 @@
     <ScrollView>
         <VerticalStackLayout Padding="40" Spacing="20">
             <Label
-        Text="Emotion Alert System"
-        FontSize="28"
-        HorizontalOptions="Center" />
+                Text="Emotion Alert System"
+                FontSize="28"
+                HorizontalOptions="Center" />
 
-            <Button
-        Text="Send Alert"
-        Clicked="OnSendAlert"
-        FontSize="20" />
+            <Label x:Name="NameLabel"
+               Text="No active escalation"
+               FontSize="30"
+               TextColor="Red"
+               HorizontalOptions="Center" />
+
+            <Label x:Name="CameraLabel"
+               Text=""
+               FontSize="20"
+               HorizontalOptions="Center" />
+
+            <Label x:Name="LevelLabel"
+               Text=""
+               FontSize="18"
+               HorizontalOptions="Center" />
         </VerticalStackLayout>
+
     </ScrollView>
 
 </ContentPage>
