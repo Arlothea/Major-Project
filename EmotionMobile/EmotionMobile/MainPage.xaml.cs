@@ -6,7 +6,7 @@ namespace EmotionMobile;
 public partial class MainPage : ContentPage
 {
 
-    private const string API_URL = "http://192.168.0.125:8000/current";
+    private const string API_URL = "http://10.240.114.33:8000/current";
 
     private string lastAlertTime = "";
 

@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from datetime import datetime
 
+# py -m uvicorn server:app --host 0.0.0.0 --port 8000
+
 app = FastAPI()
 
 current_alert = None

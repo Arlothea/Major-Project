@@ -5,11 +5,14 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using Python.Runtime;
+using Microsoft.Win32;
 
 namespace EmotionUI
 {
   public partial class MainWindow : Window
   {
+    private Task? cameraTask;
+    private bool pythonInitialized = false;
     private bool isRunning = false;
     private string _lastShownEmotion = "";
     private int _lastShownPercent = -1;
@@ -38,36 +41,40 @@ namespace EmotionUI
         string pythonDll = Path.Combine(pythonHome, "python39.dll");
         string pythonProject = @"C:\Users\Adam Wingell\Documents\Uni Work\Year 3\Dissertation\Major Project\Emotion App";
 
-        Runtime.PythonDLL = pythonDll;
-        PythonEngine.PythonHome = pythonHome;
+        if (!pythonInitialized)
+        {
+            Runtime.PythonDLL = pythonDll;
+            PythonEngine.PythonHome = pythonHome;
 
-        string dlls = Path.Combine(pythonHome, "DLLs");
-        string site = Path.Combine(pythonHome, "Lib", "site-packages");
-        string currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
-        Environment.SetEnvironmentVariable("PATH", $"{pythonHome};{dlls};{site};{currentPath}");
+            string dlls = Path.Combine(pythonHome, "DLLs");
+            string site = Path.Combine(pythonHome, "Lib", "site-packages");
+            string currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
+            Environment.SetEnvironmentVariable("PATH", $"{pythonHome};{dlls};{site};{currentPath}");
 
-        PythonEngine.PythonPath = string.Join(
-        Path.PathSeparator.ToString(),
-        new string[]
-        {
-          pythonProject,                 
-          Path.Combine(pythonProject, "Runtime"),
-          Path.Combine(pythonProject, "Models"),
-          Path.Combine(pythonHome, "Lib"),
-          Path.Combine(pythonHome, "Lib", "site-packages"),
-          Path.Combine(pythonHome, "DLLs")
-        });
-        
-        try
-        {
-          if (!PythonEngine.IsInitialized)
-            PythonEngine.Initialize();
-            PythonEngine.BeginAllowThreads();
-        }
-        catch (Exception initEx)
-        {
-          MessageBox.Show("PythonEngine initialization failed:\n" + initEx.ToString());
-          return;
+            PythonEngine.PythonPath = string.Join(
+            Path.PathSeparator.ToString(),
+            new string[]
+            {
+                pythonProject,
+                Path.Combine(pythonProject, "Runtime"),
+                Path.Combine(pythonProject, "Models"),
+                Path.Combine(pythonHome, "Lib"),
+                Path.Combine(pythonHome, "Lib", "site-packages"),
+                Path.Combine(pythonHome, "DLLs")
+            });
+
+            try
+            {
+                PythonEngine.Initialize();
+                PythonEngine.BeginAllowThreads();
+
+                pythonInitialized = true;
+            }
+            catch (Exception initEx)
+            {
+                MessageBox.Show("PythonEngine initialization failed:\n" + initEx.ToString());
+                return;
+            }
         }
 
         try
@@ -99,7 +106,7 @@ namespace EmotionUI
         StatusText.Text = "Status: Running";
         StatusText.Foreground = System.Windows.Media.Brushes.LightGreen;
 
-        await Task.Run(() => RunPythonCamera());
+        cameraTask = Task.Run(() => RunPythonCamera());
       }
       catch (Exception ex)
       {
@@ -110,16 +117,6 @@ namespace EmotionUI
     private void Stop_Click(object sender, RoutedEventArgs e)
     {
       isRunning = false;
-
-      try
-      {
-        using (Py.GIL())
-        {
-          dynamic mainPy = Py.Import("Main");
-          mainPy.release();
-        }
-      }
-      catch { }
 
       Application.Current.Dispatcher.Invoke(() =>
       {
@@ -235,12 +232,55 @@ namespace EmotionUI
       catch { }
     }
   }
+    private void Upload_Click(object sender, RoutedEventArgs e)
+    {
+        OpenFileDialog dialog = new OpenFileDialog();
+
+        dialog.Title = "Select Face Image";
+        dialog.Filter = "Image Files|*.jpg;*.jpeg;*.png";
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                string folder = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "known_faces");
+
+                Directory.CreateDirectory(folder);
+
+                string fileName = Path.GetFileName(dialog.FileName);
+                string destinationPath = Path.Combine(folder, fileName);
+
+                File.Copy(dialog.FileName, destinationPath, true);
+
+                MessageBox.Show("Face uploaded successfully.");
+
+                // NEXT STEP (later):
+                // GenerateFaceEncoding(destinationPath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Upload failed: " + ex.Message);
+            }
+        }
+    }
+
     protected override void OnClosed(EventArgs e)
     {
       isRunning = false;
-      if (PythonEngine.IsInitialized)
-        PythonEngine.Shutdown();
 
+        try
+        {
+            cameraTask.Wait();
+        }
+        catch { }
+
+        if (PythonEngine.IsInitialized)
+        {
+            using (Py.GIL()) { }
+            PythonEngine.Shutdown();
+        }
         base.OnClosed(e);
     }
   }
