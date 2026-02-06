@@ -39,7 +39,9 @@ EMOTION_WINDOW = 5
 last_faces = []
 last_face_time = 0.0
 
-API_SERVER = "http://192.168.0.125:8000"
+#UNIVERSITY
+API_SERVER = "http://10.240.114.33:8000"
+# API_SERVER = "http://192.168.0.125:8000"
 
 def send_escalation(name="Unknown", level=4, camera="Room1"):
     try:

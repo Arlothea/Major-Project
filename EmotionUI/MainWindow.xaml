@@ -16,54 +16,91 @@
             HorizontalAlignment="Center"
             Foreground="White" 
             Margin="0,0,0,10"/>
-        
-        <Grid Grid.Row="1">
-            <Border x:Name="CameraHost"
-                    Background="#2b2b2b"
-                    CornerRadius="12">
 
-                <Image x:Name="CameraFeed"
-                   Stretch="UniformToFill"
-                   HorizontalAlignment="Stretch"
-                   VerticalAlignment="Stretch"/>
-            </Border>
-            
-            <Border Background="Transparent"
-                    BorderBrush="#444"
-                    BorderThickness="2"
-                    CornerRadius="12"/>
-        </Grid>
-        
-        <Grid Grid.Row="2" Margin="0,10,0,0">
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="220"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock 
+            <Border Grid.Column="0"
+            Background="#252525"
+            CornerRadius="12"
+            Margin="0,0,10,0"
+            Padding="10">
+
+                <StackPanel>
+                    <TextBlock Text="Register Face"
+                       Foreground="White"
+                       FontWeight="Bold"/>
+
+                    <Button Content="Upload Image"
+                    Margin="0,10,0,0"
+                    Click="Upload_Click"/>
+
+                    <TextBlock x:Name="RegisteredFacesText"
+                       Text="No faces registered"
+                       Foreground="Gray"
+                       Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1"
+            x:Name="CameraHost"
+            Background="#2b2b2b"
+            CornerRadius="12">
+                <Image x:Name="CameraFeed"
+               Stretch="UniformToFill"/>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2"
+        Background="#252525"
+        BorderBrush="#3a3a3a"
+        BorderThickness="1"
+        CornerRadius="10"
+        Padding="8"
+        Margin="0,10,0,0">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock 
                 x:Name="StatusText"
                 Text="Status: Stopped"
                 Foreground="Orange"
-                VerticalAlignment="Center"/>
+                VerticalAlignment="Center"
+                Margin="6,0,12,0"/>
 
-            <TextBlock x:Name="EmotionText"
+                <TextBlock x:Name="EmotionText"
                 Grid.Column="1"
                 Text="Detected Emotion: None"
                 Foreground="White"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"/>
 
-            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                <Button 
-                    Content="Start"
+                <StackPanel Grid.Column="2" 
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    
+                    <Button Content="Start"
                     Margin="5"
+                    Padding="0,0,8,0"
+                    MinWidth="80"
                     Click="Start_Click"/>
-                <Button 
-                    Content="Stop"
+                    
+                    <Button Content="Stop"
                     Margin="5"
+                    Padding="14,6"
+                    MinWidth="80"
                     Click="Stop_Click"/>
-            </StackPanel>
-        </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

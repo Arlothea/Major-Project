@@ -11,5 +11,4 @@ namespace EmotionMobile
         public string camera { get; set; }
         public string time { get; set; }
     }
-
 }
