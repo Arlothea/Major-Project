@@ -9,6 +9,7 @@ import sys
 import cv2
 import numpy as np
 import requests
+import socket
 
 # Import the EmotionRecognizerModel from the Runtime module
 from Runtime.EmotionRecognizer import EmotionRecognizerModel
@@ -39,9 +40,18 @@ EMOTION_WINDOW = 5
 last_faces = []
 last_face_time = 0.0
 
-#UNIVERSITY
-API_SERVER = "http://10.240.114.33:8000"
-# API_SERVER = "http://192.168.0.125:8000"
+def get_ipv4():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+
+    return ip
+
+SERVER_IP = get_ipv4()
+API_SERVER = f"http://{SERVER_IP}:8000"
 
 def send_escalation(name="Unknown", level=4, camera="Room1"):
     try:
@@ -272,7 +282,6 @@ def get_frame():
                     else:
                         alert_active = False
 
-            
             except Exception:
                 continue
 

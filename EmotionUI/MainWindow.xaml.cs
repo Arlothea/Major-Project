@@ -21,7 +21,8 @@ namespace EmotionUI
     public MainWindow()
     {
       InitializeComponent();
-      
+      LoadStudentNamesOnStartup();
+
       CameraHost.SizeChanged += (s, e) =>
       {
         CameraFeed.Clip = new System.Windows.Media.RectangleGeometry(
@@ -126,7 +127,37 @@ namespace EmotionUI
         StatusText.Foreground = System.Windows.Media.Brushes.Red;
       });
     }
-  private void RunPythonCamera()
+    private void Remove_Click(object sender, RoutedEventArgs e)
+    {
+      if (StudentListBox.SelectedItem is string studentName)
+      {
+        var result = MessageBox.Show($"Are you sure you want to remove {studentName}?",
+                                     "Confirm", MessageBoxButton.YesNo);
+
+        if (result == MessageBoxResult.Yes)
+        {
+          string knownFacesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "known_faces");
+          string fileToDelete = Directory.GetFiles(knownFacesFolder, "*.jpg")
+                                         .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f)
+                                         .Equals(studentName, StringComparison.OrdinalIgnoreCase));
+
+          if (fileToDelete != null)
+          {
+            File.Delete(fileToDelete);
+            StudentListBox.Items.Remove(studentName);
+
+            if (StudentListBox.Items.Count == 0)
+              NoFacesText.Visibility = Visibility.Visible;
+          }
+        }
+      }
+      else
+      {
+        MessageBox.Show("Please select a student to remove.");
+      }
+    }
+
+    private void RunPythonCamera()
   {
     dynamic cv2 = null;
     dynamic mainPy = null;
@@ -234,36 +265,41 @@ namespace EmotionUI
   }
     private void Upload_Click(object sender, RoutedEventArgs e)
     {
-        OpenFileDialog dialog = new OpenFileDialog();
+      OpenFileDialog dialog = new OpenFileDialog
+      {
+        Title = "Select Face Image",
+        Filter = "Image Files|*.jpg;*.jpeg;*.png"
+      };
 
-        dialog.Title = "Select Face Image";
-        dialog.Filter = "Image Files|*.jpg;*.jpeg;*.png";
+      if (dialog.ShowDialog() == true)
+      {
+        string sourcePath = dialog.FileName;
+        string fileName = Path.GetFileName(sourcePath);
 
-        if (dialog.ShowDialog() == true)
+        string knownFacesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "known_faces");
+        Directory.CreateDirectory(knownFacesFolder);
+        string destinationPath = Path.Combine(knownFacesFolder, fileName);
+
+        File.Copy(sourcePath, destinationPath, true);
+
+        string studentName = Path.GetFileNameWithoutExtension(fileName);
+        StudentListBox.Items.Add(studentName);
+        NoFacesText.Visibility = Visibility.Collapsed;
+      }
+    }
+    private void LoadStudentNamesOnStartup()
+    {
+      string knownFacesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "known_faces");
+      if (Directory.Exists(knownFacesFolder))
+      {
+        var files = Directory.GetFiles(knownFacesFolder, "*.jpg");
+        foreach (var file in files)
         {
-            try
-            {
-                string folder = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "known_faces");
-
-                Directory.CreateDirectory(folder);
-
-                string fileName = Path.GetFileName(dialog.FileName);
-                string destinationPath = Path.Combine(folder, fileName);
-
-                File.Copy(dialog.FileName, destinationPath, true);
-
-                MessageBox.Show("Face uploaded successfully.");
-
-                // NEXT STEP (later):
-                // GenerateFaceEncoding(destinationPath);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Upload failed: " + ex.Message);
-            }
+          StudentListBox.Items.Add(Path.GetFileNameWithoutExtension(file));
         }
+
+        NoFacesText.Visibility = StudentListBox.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+      }
     }
 
     protected override void OnClosed(EventArgs e)
