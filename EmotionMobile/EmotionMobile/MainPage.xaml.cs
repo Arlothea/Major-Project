@@ -6,90 +6,98 @@ namespace EmotionMobile;
 public partial class MainPage : ContentPage
 {
 
-    private const string API_URL = "http://10.240.114.33:8000/current";
+  private static readonly string[] SERVER_IPS =
+  {
+    "10.240.114.33",
+    "192.168.0.125"
+  };
 
-    private string lastAlertTime = "";
+  private static string API_URL =>
+      $"http://{SERVER_IPS[1]}:8000/current";
 
-    public MainPage()
+
+  private string lastAlertTime = "";
+
+  public MainPage()
+  {
+    InitializeComponent();
+
+    _ = LocalNotificationCenter.Current.RequestNotificationPermission();
+
+    Dispatcher.StartTimer(TimeSpan.FromSeconds(1), () =>
     {
-        InitializeComponent();
+      _ = CheckForAlerts();
+      return true;
+    });
+  }
 
-        _ = LocalNotificationCenter.Current.RequestNotificationPermission();
+  protected override async void OnAppearing()
+  {
+    base.OnAppearing();
+    await RefreshUIFromServer();
+  }
 
-        Dispatcher.StartTimer(TimeSpan.FromSeconds(1), () =>
-        {
-            _ = CheckForAlerts();
-            return true;
-        });
-    }
-
-    protected override async void OnAppearing()
+  private async Task CheckForAlerts()
+  {
+    try
     {
-        base.OnAppearing();
-        await RefreshUIFromServer();
-    }
+      var json = await new HttpClient().GetStringAsync(API_URL);
 
-    private async Task CheckForAlerts()
+      if (string.IsNullOrWhiteSpace(json) || json == "null")
+        return;
+
+      var alert = JsonSerializer.Deserialize<Alert>(json);
+      if (alert == null) return;
+
+      UpdateUI(alert);
+
+      if (alert.time != lastAlertTime)
+      {
+        lastAlertTime = alert.time;
+        await ShowEscalation(alert);
+      }
+    }
+    catch { }
+  }
+
+  private async Task RefreshUIFromServer()
+  {
+    try
     {
-        try
-        {
-            var json = await new HttpClient().GetStringAsync(API_URL);
+      var json = await new HttpClient().GetStringAsync(API_URL);
+      if (string.IsNullOrWhiteSpace(json) || json == "null") return;
 
-            if (string.IsNullOrWhiteSpace(json) || json == "null")
-                return;
-
-            var alert = JsonSerializer.Deserialize<Alert>(json);
-            if (alert == null) return;
-            
-            UpdateUI(alert);
-
-            if (alert.time != lastAlertTime)
-            {
-                lastAlertTime = alert.time;
-                await ShowEscalation(alert);
-            }
-        }
-        catch { }
+      var alert = JsonSerializer.Deserialize<Alert>(json);
+      if (alert != null) UpdateUI(alert);
     }
+    catch { }
+  }
 
-    private async Task RefreshUIFromServer()
+  private void UpdateUI(Alert alert)
+  {
+    MainThread.BeginInvokeOnMainThread(() =>
     {
-        try
-        {
-            var json = await new HttpClient().GetStringAsync(API_URL);
-            if (string.IsNullOrWhiteSpace(json) || json == "null") return;
+      NameLabel.Text = alert.name;
+      CameraLabel.Text = $"Location: {alert.camera}";
+      LevelLabel.Text = $"Escalation level: {alert.level}";
+    });
+  }
 
-            var alert = JsonSerializer.Deserialize<Alert>(json);
-            if (alert != null) UpdateUI(alert);
-        }
-        catch { }
-    }
-
-    private void UpdateUI(Alert alert)
+  private async Task ShowEscalation(Alert alert)
+  {
+    var request = new NotificationRequest
     {
-        MainThread.BeginInvokeOnMainThread(() =>
-        {
-            NameLabel.Text = alert.name;
-            CameraLabel.Text = $"Location: {alert.camera}";
-            LevelLabel.Text = $"Escalation level: {alert.level}";
-        });
-    }
+      NotificationId = 100,
+      Title = "🚨 Escalation Detected",
+      Description = $"{alert.name} – {alert.camera} (Level {alert.level})",
+      Schedule = new NotificationRequestSchedule
+      {
+        NotifyTime = DateTime.Now
+      }
+    };
 
-    private async Task ShowEscalation(Alert alert)
-    {
-        var request = new NotificationRequest
-        {
-            NotificationId = 100,
-            Title = "🚨 Escalation Detected",
-            Description = $"{alert.name} – {alert.camera} (Level {alert.level})",
-            Schedule = new NotificationRequestSchedule
-            {
-                NotifyTime = DateTime.Now
-            }
-        };
-
-        await LocalNotificationCenter.Current.Show(request);
-    }
+    await LocalNotificationCenter.Current.Show(request);
+  }
 }
 
 

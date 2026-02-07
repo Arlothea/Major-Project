@@ -10,10 +10,11 @@ current_alert = None
 @app.post("/escalation")
 async def escalation(data: dict):
     global current_alert
+
     current_alert = {
-        "name": data["name"],
-        "level": data["level"],
-        "camera": data["camera"],
+        "name": data.get("name", "Unknown"),
+        "level": int(data.get("level", 0)),
+        "camera": data.get("camera", "Unknown"),
         "time": datetime.now().isoformat()
     }
     return {"ok": True}
