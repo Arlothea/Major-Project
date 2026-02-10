@@ -12,10 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="pythonnet" Version="3.0.5" />
+    <Compile Remove="Known_Faces\**" />
+    <EmbeddedResource Remove="Known_Faces\**" />
+    <None Remove="Known_Faces\**" />
+    <Page Remove="Known_Faces\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Known_Faces\" />
+    <PackageReference Include="pythonnet" Version="3.0.5" />
   </ItemGroup>
 </Project>

@@ -53,7 +53,7 @@ def get_ipv4():
 SERVER_IP = get_ipv4()
 API_SERVER = f"http://{SERVER_IP}:8000"
 
-def send_escalation(name="Unknown", level=4, camera="Room1"):
+def send_escalation(name="Child Escalation", level=1, camera="Acorn"):
     try:
         requests.post(
             f"{API_SERVER}/escalation",

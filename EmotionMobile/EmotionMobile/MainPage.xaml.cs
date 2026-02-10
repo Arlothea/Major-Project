@@ -15,7 +15,6 @@ public partial class MainPage : ContentPage
   private static string API_URL =>
       $"http://{SERVER_IPS[1]}:8000/current";
 
-
   private string lastAlertTime = "";
 
   public MainPage()
@@ -99,5 +98,3 @@ public partial class MainPage : ContentPage
     await LocalNotificationCenter.Current.Show(request);
   }
 }
-
-

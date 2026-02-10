@@ -1,11 +1,14 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using Python.Runtime;
+using System;
+using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using Python.Runtime;
-using Microsoft.Win32;
+using System.Net.Http;
 
 namespace EmotionUI
 {
@@ -17,7 +20,8 @@ namespace EmotionUI
     private string _lastShownEmotion = "";
     private int _lastShownPercent = -1;
     private readonly Dictionary<string, int> _bestPercentByEmotion = new Dictionary<string, int>();
-    
+    private Process? serverProcess;
+
     public MainWindow()
     {
       InitializeComponent();
@@ -36,11 +40,30 @@ namespace EmotionUI
       if (isRunning)
       return;
 
+      string pythonHome = @"C:\Program Files\Python39";
+      string pythonDll = Path.Combine(pythonHome, "python39.dll");
+      string pythonProject = @"C:\Users\Adam Wingell\Documents\Uni Work\Year 3\Dissertation\Major Project\Emotion App";
+
       try
       {
-        string pythonHome = @"C:\Program Files\Python39";
-        string pythonDll = Path.Combine(pythonHome, "python39.dll");
-        string pythonProject = @"C:\Users\Adam Wingell\Documents\Uni Work\Year 3\Dissertation\Major Project\Emotion App";
+        if (serverProcess == null || serverProcess.HasExited)
+        {
+          serverProcess = Process.Start(new ProcessStartInfo
+          {
+            FileName = @"C:\Program Files\Python39\python.exe",
+            Arguments = "\"C:\\Users\\Adam Wingell\\Documents\\Uni Work\\Year 3\\Dissertation\\Major Project\\Emotion App\\server.py\"",
+            WorkingDirectory = @"C:\Users\Adam Wingell\Documents\Uni Work\Year 3\Dissertation\Major Project\Emotion App",
+            UseShellExecute = false,
+            CreateNoWindow = true
+          });
+          bool serverReady = await WaitForServer();
+
+          if (!serverReady)
+          {
+            MessageBox.Show("Server failed to start.");
+            return;
+          }
+        }
 
         if (!pythonInitialized)
         {
@@ -155,6 +178,25 @@ namespace EmotionUI
       {
         MessageBox.Show("Please select a student to remove.");
       }
+    }
+    private async Task<bool> WaitForServer()
+    {
+      using var client = new HttpClient();
+
+      for (int i = 0; i < 10; i++)
+      {
+        try
+        {
+          var response = await client.GetAsync("http://127.0.0.1:8000/ping");
+          if (response.IsSuccessStatusCode)
+            return true;
+        }
+        catch { }
+
+        await Task.Delay(500);
+      }
+
+      return false;
     }
 
     private void RunPythonCamera()
@@ -318,6 +360,12 @@ namespace EmotionUI
             PythonEngine.Shutdown();
         }
         base.OnClosed(e);
+
+        if (serverProcess != null && !serverProcess.HasExited)
+        {
+          serverProcess.Kill();
+        }
+
     }
   }
 }
