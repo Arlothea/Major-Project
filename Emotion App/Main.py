@@ -53,7 +53,7 @@ def get_ipv4():
 SERVER_IP = get_ipv4()
 API_SERVER = f"http://{SERVER_IP}:8000"
 
-def send_escalation(name="Child Escalation", level=1, camera="Acorn"):
+def send_escalation(name="Unknown", level=2, camera="Room1"):
     try:
         requests.post(
             f"{API_SERVER}/escalation",
@@ -271,7 +271,7 @@ def get_frame():
                 if transition_detected and not alert_active:
                     alert_active = True
                     alert_start_time = current_time
-                    send_escalation(name="Unknown", level=4, camera="Room1")
+                    send_escalation(name="Child Escalated", level=2, camera="Acorn")
 
                 if alert_active:
                     if current_time - alert_start_time < ALERT_DURATION:
