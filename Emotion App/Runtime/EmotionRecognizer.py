@@ -9,8 +9,8 @@ class EmotionRecognizerModel:
         # Define the list of emotions
         self.emotions = [
             "angry",
-            "neutral",
-            "happy",            
+            "neutral",  
+            "happy",
         ]
     # Preprocess the input face image for prediction
     def preprocess(self, face):
