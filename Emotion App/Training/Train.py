@@ -29,7 +29,7 @@ model = EmotionModel(
 
 # ----------------- TRAIN MODEL ------------------
 # Train the model using training data from within the dataset folder and validate using validation data.
-model.train(train_data, val_data, epochs=25)
+model.train(train_data, val_data, epochs=50)
 
 # -------------------- SAVE THE MODEL ------------------
 # Save the trained model to the specified path, ensuring it is stored in the "Models" directory for future use.
